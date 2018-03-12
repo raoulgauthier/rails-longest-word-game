@@ -1,5 +1,4 @@
 require 'open-uri'
-require 'json'
 
 class GamesController < ApplicationController
   def new
@@ -8,11 +7,12 @@ class GamesController < ApplicationController
   end
 
   def score
+    # binding.pry
     @start_time = Time.now
     @attempt = params[:answer]
     @end_time = Time.now
     @time_taken = @end_time - @start_time
-    @score = score_and_message(@attempt, @grid)
+    @score = score_and_message(@attempt, params[:grid].split(" "))
   end
 
 private
@@ -34,10 +34,14 @@ private
   #   @result
   # end
 
+def included?(guess, grid)
+  guess.chars.all? { |letter| guess.count(letter) <= grid.count(letter) }
+end
+
   def score_and_message(attempt, grid)
-    if include_content?(@attempt.upcase)
-      if english_word?(@attempt)
-        score = compute_score(@attempt, @time_taken)
+    if included?(attempt.upcase, grid)
+      if english_word?(attempt)
+        score = compute_score(attempt, @time_taken)
         [score, "well done"]
       else
         [0, "not an english word"]
@@ -47,8 +51,8 @@ private
     end
   end
 
-  def english_word?(attempt)
-    response = open("https://wagon-dictionary.herokuapp.com/#{attempt}")
+  def english_word?(word)
+    response = open("https://wagon-dictionary.herokuapp.com/#{@attempt}")
     json = JSON.parse(response.read)
     return json['found']
   end
